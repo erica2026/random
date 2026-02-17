@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OpenFridge - Turn Fridge Photos Into Fire Meals</title>
+    <meta name="description" content="Snap a photo of your fridge, get creative recipe ideas. No delivery fees, no waste, just vibes.">
+    <meta name="theme-color" content="#A8E6CF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --mint: #A8E6CF;
+            --mint-dark: #7BC9A6;
+            --cream: #FFF8E7;
+            --cream-dark: #F5EED4;
+            --orange: #FF8C42;
+            --orange-glow: #FFB074;
+            --navy: #2D3436;
+            --text: #3D3D3D;
+            --shadow: rgba(45, 52, 54, 0.15);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            min-height: 100vh;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+        
+        /* Background glow */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, var(--mint) 0%, transparent 40%),
+                        radial-gradient(circle at 70% 80%, var(--orange-glow) 0%, transparent 30%);
+            opacity: 0.3;
+            z-index: -1;
+            animation: glowPulse 8s ease-in-out infinite;
+        }
+        
+        @keyframes glowPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .container {
+            max-width: 420px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        header {
+            text-align: center;
+            padding: 20px 0 30px;
+        }
+        
+        .logo {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 2.5rem;
+            color: var(--navy);
+            letter-spacing: -1px;
+            text-shadow: 2px 2px 0 var(--mint);
+        }
+        
+        .logo span {
+            color: var(--orange);
+        }
+        
+        .tagline {
+            font-size: 0.95rem;
+            color: var(--text);
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+        
+        /* Upload Section */
+        .upload-section {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 8px 32px var(--shadow);
+            margin-bottom: 24px;
+        }
+        
+        .upload-btn {
+            width: 100%;
+            padding: 60px 20px;
+            border: 3px dashed var(--mint-dark);
+            border-radius: 16px;
+            background: var(--cream);
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .upload-btn:hover, .upload-btn:active {
+            border-color: var(--orange);
+            background: var(--mint);
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--mint);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        
+        .upload-text {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--navy);
+        }
+        
+        .upload-subtext {
+            font-size: 0.85rem;
+            color: var(--text);
+            opacity: 0.6;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        /* Preview */
+        .preview-section {
+            display: none;
+            margin-bottom: 24px;
+        }
+        
+        .preview-section.active {
+            display: block;
+        }
+        
+        .preview-image {
+            width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px var(--shadow);
+        }
+        
+        .ingredients-detected {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 12px;
+            box-shadow: 0 4px 16px var(--shadow);
+        }
+        
+        .ingredients-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .ingredient-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .ingredient-tag {
+            background: var(--mint);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        /* Generate Button */
+        .generate-btn {
+            width: 100%;
+            padding: 18px;
+            background: var(--orange);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(255, 140, 66, 0.4);
+            transition: all 0.3s;
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 140, 66, 0.5);
+        }
+        
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--cream);
+            border-top-color: var(--orange);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-weight: 600;
+            color: var(--navy);
+        }
+        
+        /* Recipes */
+        .recipes-section {
+            display: none;
+        }
+        
+        .recipes-section.active {
+            display: block;
+        }
+        
+        .recipes-title {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            color: var(--navy);
+        }
+        
+        .recipe-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 6px 24px var(--shadow);
+            transition: transform 0.3s;
+        }
+        
+        .recipe-card:hover {
+            transform: translateY(-4px);
+        }
+        
+        .recipe-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .recipe-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--navy);
+            flex: 1;
+        }
+        
+        /* Rating Badge */
+        .rating {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .rating.fire {
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: white;
+        }
+        
+        .rating.edible {
+            background: linear-gradient(135deg, var(--mint), var(--mint-dark));
+            color: var(--navy);
+        }
+        
+        .rating.technical {
+            background: var(--cream-dark);
+            color: var(--text);
+        }
+        
+        .recipe-ingredients {
+            font-size: 0.9rem;
+            color: var(--text);
+            opacity: 0.8;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+        
+        .recipe-instructions {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--text);
+            padding-top: 12px;
+            border-top: 2px dashed var(--cream-dark);
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            font-size: 0.85rem;
+            color: var(--text);
+            opacity: 0.5;
+        }
+        
+        /* Fridge mascot */
+        .fridge-mascot {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 48px;
+            animation: bounce 2s infinite;
+            z-index: 100;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">Open<span>Fridge</span></div>
+            <p class="tagline">What's in your fridge? Let's make it work. 🔥</p>
+        </header>
+        
+        <section class="upload-section">
+            <input type="file" id="fileInput" accept="image/*" capture="environment">
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📸</div>
+                <div class="upload-text">Snap Your Fridge</div>
+                <div class="upload-subtext">Camera or gallery</div>
+            </button>
+        </section>
+        
+        <section class="preview-section" id="previewSection">
+            <img src="" alt="Your ingredients" class="preview-image" id="previewImage">
+            <div class="ingredients-detected">
+                <div class="ingredients-title">🧀 We spotted:</div>
+                <div class="ingredient-tags" id="ingredientTags"></div>
+            </div>
+            <button class="generate-btn" onclick="generateRecipes()">
+                ✨ Generate Recipes
+            </button>
+        </section>
+        
+        <section class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Rummaging through your ingredients...</div>
+        </section>
+        
+        <section class="recipes-section" id="recipesSection">
+            <div class="recipes-title">Here's What We Made 🎨</div>
+            <div id="recipesList"></div>
+        </section>
+        
+        <footer>
+            <p>No delivery fees. No waste. Just vibes.</p>
+        </footer>
+    </div>
+    
+    <div class="fridge-mascot">🧊</div>
+    
+    <script>
+        // Mock ingredient detection (for demo)
+        const mockIngredients = [
+            ['eggs', 'cheese', 'salsa', 'tortillas'],
+            ['chicken', 'rice', 'soy sauce', 'garlic'],
+            ['pasta', 'parmesan', 'butter', 'garlic'],
+            ['bread', 'peanut butter', 'jelly', 'banana'],
+            ['potatoes', 'cheese', 'sour cream', 'chives']
+        ];
+        
+        const mockRecipes = [
+            {
+                name: "The 9PM Desperation Wrap",
+                rating: "fire",
+                ratingText: "Actually Fire 🔥",
+                ingredients: "eggs, cheese, salsa, tortillas",
+                instructions: "Scramble eggs in a hot pan with cheese. Warm tortillas. Load it up with salsa. Roll tight. Eat over sink. Congratulations, you just made dinner for under $2."
+            },
+            {
+                name: "Fridge Clean-Out Fried Rice",
+                rating: "edible",
+                ratingText: "Surprisingly Edible 👀",
+                ingredients: "chicken, rice, soy sauce, garlic (and whatever else is in there)",
+                instructions: "Day-old rice is best. Chop everything into small pieces. High heat, sesame oil. Add protein first, then veggies. Soy sauce to taste. This is what dreams are made of."
+            },
+            {
+                name: "The Sad Desk Lunch",
+                rating: "technical",
+                ratingText: "Technically Food 🍽️",
+                ingredients: "whatever expires first",
+                instructions: "Plate it nicely. Take a photo. Pretend you planned this. It's about presentation, baby. The vibes are what you make of them."
+            }
+        ];
+        
+        const fileInput = document.getElementById('fileInput');
+        const previewSection = document.getElementById('previewSection');
+        const previewImage = document.getElementById('previewImage');
+        const ingredientTags = document.getElementById('ingredientTags');
+        const loading = document.getElementById('loading');
+        const recipesSection = document.getElementById('recipesSection');
+        const recipesList = document.getElementById('recipesList');
+        
+        let detectedIngredients = [];
+        
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewSection.classList.add('active');
+                    
+                    // Mock ingredient detection
+                    const randomIngredients = mockIngredients[Math.floor(Math.random() * mockIngredients.length)];
+                    detectedIngredients = randomIngredients;
+                    
+                    ingredientTags.innerHTML = randomIngredients
+                        .map(ing => `<span class="ingredient-tag">${ing}</span>`)
+                        .join('');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        function generateRecipes() {
+            loading.classList.add('active');
+            recipesSection.classList.remove('active');
+            
+            // Simulate AI processing
+            setTimeout(() => {
+                loading.classList.remove('active');
+                recipesSection.classList.add('active');
+                
+                // Display recipes
+                recipesList.innerHTML = mockRecipes.map(recipe => `
+                    <div class="recipe-card">
+                        <div class="recipe-header">
+                            <div class="recipe-name">${recipe.name}</div>
+                            <div class="rating ${recipe.rating}">${recipe.ratingText}</div>
+                        </div>
+                        <div class="recipe-ingredients"><strong>Using:</strong> ${recipe.ingredients}</div>
+                        <div class="recipe-instructions">${recipe.instructions}</div>
+                    </div>
+                `).join('');
+                
+                // Scroll to recipes
+                recipesSection.scrollIntoView({ behavior: 'smooth' });
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
